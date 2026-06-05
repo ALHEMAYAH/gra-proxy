@@ -36,10 +36,27 @@ export default async function handler(req, res) {
       redirect: 'manual',
     });
 
-    // Collect cookies
-    const setCookie = graResp.headers.get('set-cookie') || '';
-    const cookieParts = setCookie.split(/,(?=[^ ,]+=)/)
-      .map(c => c.split(';')[0].trim()).filter(Boolean);
+    // Collect ALL Set-Cookie headers properly
+    const rawHeaders = graResp.headers.raw ? graResp.headers.raw() : {};
+    let cookieParts = [];
+    
+    if (rawHeaders['set-cookie']) {
+      // Node-fetch v2 style
+      rawHeaders['set-cookie'].forEach(c => {
+        const nameVal = c.split(';')[0].trim();
+        if (nameVal) cookieParts.push(nameVal);
+      });
+    } else {
+      // Fallback: parse combined header
+      const setCookie = graResp.headers.get('set-cookie') || '';
+      if (setCookie) {
+        setCookie.split(/,(?=[^;]+=)/).forEach(c => {
+          const nameVal = c.split(';')[0].trim();
+          if (nameVal) cookieParts.push(nameVal);
+        });
+      }
+    }
+
     const allCookies = cookieParts.join('; ');
     const location = graResp.headers.get('location') || '';
     const contentType = graResp.headers.get('content-type') || 'text/html';
