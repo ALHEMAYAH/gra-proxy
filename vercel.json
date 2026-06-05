@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/gra-proxy/(.*)", "destination": "/api/gra-proxy" }
+  ]
+}
