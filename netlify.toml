@@ -1,0 +1,7 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/gra-proxy/*"
+  to = "/.netlify/functions/gra-proxy/:splat"
+  status = 200
