@@ -1,17 +1,15 @@
 const GRA_BASE = 'https://gra.rak.ae';
-
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://alhemayah.github.io');
+  const allowedOrigins = ['https://alhemayah.github.io', 'https://alhemayah-security.com'];
+  const origin = req.headers.origin || '';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : allowedOrigins[0]);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-GRA-Cookie');
   res.setHeader('Access-Control-Expose-Headers', 'X-GRA-Cookies, X-GRA-Location, X-GRA-Status');
-
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-
   const path = req.url.replace('/gra-proxy', '') || '/';
   const graUrl = GRA_BASE + path;
   const graCookie = req.headers['x-gra-cookie'] || '';
-
   try {
     let body = undefined;
     if (req.method === 'POST') {
@@ -21,7 +19,6 @@ export default async function handler(req, res) {
         req.on('end', () => resolve(data));
       });
     }
-
     const graResp = await fetch(graUrl, {
       method: req.method,
       headers: {
@@ -35,19 +32,14 @@ export default async function handler(req, res) {
       body: body,
       redirect: 'manual',
     });
-
-    // Collect ALL Set-Cookie headers properly
     const rawHeaders = graResp.headers.raw ? graResp.headers.raw() : {};
     let cookieParts = [];
-    
     if (rawHeaders['set-cookie']) {
-      // Node-fetch v2 style
       rawHeaders['set-cookie'].forEach(c => {
         const nameVal = c.split(';')[0].trim();
         if (nameVal) cookieParts.push(nameVal);
       });
     } else {
-      // Fallback: parse combined header
       const setCookie = graResp.headers.get('set-cookie') || '';
       if (setCookie) {
         setCookie.split(/,(?=[^;]+=)/).forEach(c => {
@@ -56,19 +48,16 @@ export default async function handler(req, res) {
         });
       }
     }
-
     const allCookies = cookieParts.join('; ');
     const location = graResp.headers.get('location') || '';
     const contentType = graResp.headers.get('content-type') || 'text/html';
     const isRedirect = graResp.status === 301 || graResp.status === 302;
     const respBody = isRedirect ? '' : await graResp.text();
-
     res.setHeader('Content-Type', contentType);
     res.setHeader('X-GRA-Cookies', allCookies);
     res.setHeader('X-GRA-Location', location);
     res.setHeader('X-GRA-Status', String(graResp.status));
     res.status(graResp.status).send(respBody);
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
