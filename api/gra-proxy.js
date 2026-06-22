@@ -2,7 +2,8 @@ const GRA_BASE = 'https://gra.rak.ae';
 export default async function handler(req, res) {
   const allowedOrigins = ['https://alhemayah.github.io', 'https://alhemayah-security.com'];
   const origin = req.headers.origin || '';
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : allowedOrigins[0]);
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : '*';
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-GRA-Cookie');
   res.setHeader('Access-Control-Expose-Headers', 'X-GRA-Cookies, X-GRA-Location, X-GRA-Status');
